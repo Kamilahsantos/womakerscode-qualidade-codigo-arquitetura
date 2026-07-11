@@ -1,0 +1,18 @@
+# markdown do curso
+instructions.md
+requests.md
+
+# build
+**/bin/
+**/obj/
+
+# rider / vs / vscode
+.idea/
+.vs/
+.vscode/
+
+# user secrets
+*.user
+
+# logs
+*.log
