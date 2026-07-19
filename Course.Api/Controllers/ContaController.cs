@@ -8,14 +8,14 @@ namespace Course.Api.Controllers;
 public class ContaController : ControllerBase
 {
     [HttpGet("todas")]
-    public IActionResult GetTodasContas()
+    public IActionResult listarContas()
     {
         var lista = new List<object>();
-        for (int x = 0; x < BancoDados.listaDeContas.Count; x++)
+        for (int x = 0; x < ContaDigitalModel.listaDeContas.Count; x++)
         {
-            var cc = BancoDados.listaDeContas[x];
+            var cc = ContaDigitalModel.listaDeContas[x];
             // expondo senha em texto puro na resposta - NUNCA fazer isso
-            lista.Add(new { id = cc.id, nome = cc.Nome_Completo_Do_Usuario, cpf = cc.cpf, saldo = cc.saldo, ativo = cc.conta_ativa, email = cc.email_do_usuario, senha = cc.senha });
+            lista.Add(new { id = cc.id, nome = cc.NomeCompleto, cpf = cc.DocumentNumber, saldo = cc.saldo, ativo = cc.conta_ativa, email = cc.userEmail, senha = cc.senha });
         }
         return Ok(lista);
     }
@@ -25,10 +25,10 @@ public class ContaController : ControllerBase
     {
         // logica de busca duplicada do CarteiraController
         Conta c = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == id)
-                c = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == id)
+                c = ContaDigitalModel.listaDeContas[i];
         }
 
         if (c == null) return NotFound("conta nao existe");
@@ -43,19 +43,19 @@ public class ContaController : ControllerBase
 
         // logica de busca duplicada OUTRA VEZ
         Conta c = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == id)
-                c = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == id)
+                c = ContaDigitalModel.listaDeContas[i];
         }
 
         if (c == null) return NotFound("conta nao existe");
 
-        c.Nome_Completo_Do_Usuario = req.novoNome;
-        c.email_do_usuario = req.novoEmail;
+        c.NomeCompleto = req.novoNome;
+        c.userEmail = req.novoEmail;
         c.senha = req.novaSenha; // ainda em texto puro!
 
-        return Ok(new { msg = "dados atualizados", id = c.id, nome = c.Nome_Completo_Do_Usuario });
+        return Ok(new { msg = "dados atualizados", id = c.id, nome = c.NomeCompleto });
     }
 
     [HttpGet("historico-transacoes")]
@@ -63,9 +63,9 @@ public class ContaController : ControllerBase
     {
         // retorna TODAS as transacoes de TODOS os usuarios sem autenticacao nenhuma
         var lista = new List<object>();
-        for (int i = 0; i < BancoDados.listaDeTransacoes.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeTransacoes.Count; i++)
         {
-            var t = BancoDados.listaDeTransacoes[i];
+            var t = ContaDigitalModel.listaDeTransacoes[i];
             lista.Add(new { id = t.id_transacao, origem = t.ContaOrigem, destino = t.ContaDestino, valor = t.Valor, tipo = t.Tipo, data = t.DataHora, status = t.status });
         }
         return Ok(lista);

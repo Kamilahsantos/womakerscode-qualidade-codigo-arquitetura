@@ -7,16 +7,16 @@ namespace Course.Api.Controllers;
 public class CarteiraController : ControllerBase
 {
     [HttpPost("criar-carteira")]
-    public IActionResult CriarCarteira([FromBody] CriarCarteiraReq req)
+    public IActionResult CriarCarteira([FromBody] CriarCarteiraRequest criarCarteiraRequest)
     {
-        if (req == null)
+        if (criarCarteiraRequest == null)
             return BadRequest("erro");
 
         // verifica cpf duplicado - logica inline sem metodo separado
         bool cpfExiste = false;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].cpf == req.cpf)
+            if (ContaDigitalModel.listaDeContas[i].DocumentNumber == criarCarteiraRequest.cpf)
             {
                 cpfExiste = true;
                 break;
@@ -27,19 +27,19 @@ public class CarteiraController : ControllerBase
             return BadRequest(new { msg = "cpf ja cadastrado" });
 
         var c = new Conta();
-        c.id = BancoDados.proximoId;
-        c.Nome_Completo_Do_Usuario = req.nome;
-        c.cpf = req.cpf;
+        c.id = ContaDigitalModel.proximoId;
+        c.NomeCompleto = criarCarteiraRequest.nome;
+        c.DocumentNumber = criarCarteiraRequest.cpf;
         c.saldo = 0;
-        c.senha = req.senha; // armazenando senha em texto puro
+        c.senha = criarCarteiraRequest.senha; // armazenando senha em texto puro
         c.conta_ativa = true;
         c.DataDeCriacaoDaConta = DateTime.Now;
-        c.email_do_usuario = req.email;
+        c.userEmail = criarCarteiraRequest.email;
 
-        BancoDados.proximoId = BancoDados.proximoId + 1;
-        BancoDados.listaDeContas.Add(c);
+        ContaDigitalModel.proximoId = ContaDigitalModel.proximoId + 1;
+        ContaDigitalModel.listaDeContas.Add(c);
 
-        return Ok(new { id = c.id, nome = c.Nome_Completo_Do_Usuario, saldo = c.saldo, ativo = c.conta_ativa });
+        return Ok(new { id = c.id, nome = c.NomeCompleto, saldo = c.saldo, ativo = c.conta_ativa });
     }
 
     [HttpGet("{id}")]
@@ -47,16 +47,16 @@ public class CarteiraController : ControllerBase
     {
         // logica de busca duplicada - vai se repetir em todos os metodos
         Conta contaEncontrada = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == id)
-                contaEncontrada = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == id)
+                contaEncontrada = ContaDigitalModel.listaDeContas[i];
         }
 
         if (contaEncontrada == null)
             return NotFound(new { msg = "conta nao encontrada" });
 
-        return Ok(new { id = contaEncontrada.id, nome = contaEncontrada.Nome_Completo_Do_Usuario, saldo = contaEncontrada.saldo, cpf = contaEncontrada.cpf, email = contaEncontrada.email_do_usuario, ativo = contaEncontrada.conta_ativa });
+        return Ok(new { id = contaEncontrada.id, nome = contaEncontrada.NomeCompleto, saldo = contaEncontrada.saldo, cpf = contaEncontrada.DocumentNumber, email = contaEncontrada.userEmail, ativo = contaEncontrada.conta_ativa });
     }
 
     [HttpPost("depositar")]
@@ -67,10 +67,10 @@ public class CarteiraController : ControllerBase
 
         // logica de busca duplicada de novo
         Conta contaEncontrada = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == req.id)
-                contaEncontrada = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == req.id)
+                contaEncontrada = ContaDigitalModel.listaDeContas[i];
         }
 
         if (contaEncontrada == null)
@@ -84,8 +84,8 @@ public class CarteiraController : ControllerBase
 
         contaEncontrada.saldo = contaEncontrada.saldo + req.valor;
 
-        var t = new Transacoes123();
-        t.id_transacao = BancoDados.proximoIdTransacao;
+        var t = new Transacao();
+        t.id_transacao = ContaDigitalModel.proximoIdTransacao;
         t.ContaOrigem = req.id;
         t.ContaDestino = req.id;
         t.Valor = req.valor;
@@ -93,8 +93,8 @@ public class CarteiraController : ControllerBase
         t.DataHora = DateTime.Now;
         t.descricao = "Deposito de " + req.valor + " reais na conta " + req.id;
         t.status = "ok";
-        BancoDados.proximoIdTransacao++;
-        BancoDados.listaDeTransacoes.Add(t);
+        ContaDigitalModel.proximoIdTransacao++;
+        ContaDigitalModel.listaDeTransacoes.Add(t);
 
         return Ok(new { msg = "deposito realizado com sucesso", novoSaldo = contaEncontrada.saldo });
     }
@@ -107,10 +107,10 @@ public class CarteiraController : ControllerBase
 
         // logica de busca duplicada DE NOVO (terceira vez)
         Conta contaEncontrada = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == req.id)
-                contaEncontrada = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == req.id)
+                contaEncontrada = ContaDigitalModel.listaDeContas[i];
         }
 
         if (contaEncontrada == null)
@@ -127,8 +127,8 @@ public class CarteiraController : ControllerBase
 
         contaEncontrada.saldo = contaEncontrada.saldo - req.valor;
 
-        var t = new Transacoes123();
-        t.id_transacao = BancoDados.proximoIdTransacao;
+        var t = new Transacao();
+        t.id_transacao = ContaDigitalModel.proximoIdTransacao;
         t.ContaOrigem = req.id;
         t.ContaDestino = req.id;
         t.Valor = req.valor;
@@ -136,8 +136,8 @@ public class CarteiraController : ControllerBase
         t.DataHora = DateTime.Now;
         t.descricao = "Saque de " + req.valor + " reais da conta " + req.id;
         t.status = "ok";
-        BancoDados.proximoIdTransacao++;
-        BancoDados.listaDeTransacoes.Add(t);
+        ContaDigitalModel.proximoIdTransacao++;
+        ContaDigitalModel.listaDeTransacoes.Add(t);
 
         return Ok(new { msg = "saque realizado", novoSaldo = contaEncontrada.saldo });
     }
@@ -150,17 +150,17 @@ public class CarteiraController : ControllerBase
 
         // logica de busca duplicada PELA QUARTA VEZ
         Conta origem = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == req.idOrigem)
-                origem = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == req.idOrigem)
+                origem = ContaDigitalModel.listaDeContas[i];
         }
 
         Conta destino = null;
-        for (int j = 0; j < BancoDados.listaDeContas.Count; j++)
+        for (int j = 0; j < ContaDigitalModel.listaDeContas.Count; j++)
         {
-            if (BancoDados.listaDeContas[j].id == req.idDestino)
-                destino = BancoDados.listaDeContas[j];
+            if (ContaDigitalModel.listaDeContas[j].id == req.idDestino)
+                destino = ContaDigitalModel.listaDeContas[j];
         }
 
         if (origem == null)
@@ -184,8 +184,8 @@ public class CarteiraController : ControllerBase
         origem.saldo = origem.saldo - req.valor;
         destino.saldo = destino.saldo + req.valor;
 
-        var t = new Transacoes123();
-        t.id_transacao = BancoDados.proximoIdTransacao;
+        var t = new Transacao();
+        t.id_transacao = ContaDigitalModel.proximoIdTransacao;
         t.ContaOrigem = req.idOrigem;
         t.ContaDestino = req.idDestino;
         t.Valor = req.valor;
@@ -193,8 +193,8 @@ public class CarteiraController : ControllerBase
         t.DataHora = DateTime.Now;
         t.descricao = "Transferencia de " + req.valor + " da conta " + req.idOrigem + " para conta " + req.idDestino;
         t.status = "ok";
-        BancoDados.proximoIdTransacao++;
-        BancoDados.listaDeTransacoes.Add(t);
+        ContaDigitalModel.proximoIdTransacao++;
+        ContaDigitalModel.listaDeTransacoes.Add(t);
 
         return Ok(new { msg = "transferencia realizada" });
     }
@@ -204,28 +204,28 @@ public class CarteiraController : ControllerBase
     {
         // logica de busca duplicada PELA QUINTA VEZ
         Conta contaEncontrada = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == id)
-                contaEncontrada = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == id)
+                contaEncontrada = ContaDigitalModel.listaDeContas[i];
         }
 
         if (contaEncontrada == null)
             return NotFound(new { msg = "conta nao encontrada" });
 
         var lista = new List<object>();
-        for (int i = 0; i < BancoDados.listaDeTransacoes.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeTransacoes.Count; i++)
         {
-            if (BancoDados.listaDeTransacoes[i].ContaOrigem == id || BancoDados.listaDeTransacoes[i].ContaDestino == id)
+            if (ContaDigitalModel.listaDeTransacoes[i].ContaOrigem == id || ContaDigitalModel.listaDeTransacoes[i].ContaDestino == id)
             {
                 lista.Add(new
                 {
-                    id = BancoDados.listaDeTransacoes[i].id_transacao,
-                    tipo = BancoDados.listaDeTransacoes[i].Tipo,
-                    valor = BancoDados.listaDeTransacoes[i].Valor,
-                    descricao = BancoDados.listaDeTransacoes[i].descricao,
-                    data = BancoDados.listaDeTransacoes[i].DataHora,
-                    status = BancoDados.listaDeTransacoes[i].status
+                    id = ContaDigitalModel.listaDeTransacoes[i].id_transacao,
+                    tipo = ContaDigitalModel.listaDeTransacoes[i].Tipo,
+                    valor = ContaDigitalModel.listaDeTransacoes[i].Valor,
+                    descricao = ContaDigitalModel.listaDeTransacoes[i].descricao,
+                    data = ContaDigitalModel.listaDeTransacoes[i].DataHora,
+                    status = ContaDigitalModel.listaDeTransacoes[i].status
                 });
             }
         }
@@ -238,10 +238,10 @@ public class CarteiraController : ControllerBase
     {
         // logica de busca duplicada PELA SEXTA VEZ
         Conta contaEncontrada = null;
-        for (int i = 0; i < BancoDados.listaDeContas.Count; i++)
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
-            if (BancoDados.listaDeContas[i].id == id)
-                contaEncontrada = BancoDados.listaDeContas[i];
+            if (ContaDigitalModel.listaDeContas[i].id == id)
+                contaEncontrada = ContaDigitalModel.listaDeContas[i];
         }
 
         if (contaEncontrada == null)
@@ -254,7 +254,7 @@ public class CarteiraController : ControllerBase
 }
 
 // modelos de request jogados no mesmo arquivo do controller - lugar errado
-public class CriarCarteiraReq
+public class CriarCarteiraRequest
 {
     public string nome { get; set; }
     public string cpf { get; set; }

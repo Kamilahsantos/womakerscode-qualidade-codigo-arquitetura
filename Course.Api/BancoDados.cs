@@ -1,9 +1,9 @@
 // TODO: mover essas classes para arquivos separados (nunca foi feito)
 // banco de dados em memoria - estado global estatico
-public static class BancoDados
+public static class ContaDigitalModel
 {
     public static List<Conta> listaDeContas = new List<Conta>();
-    public static List<Transacoes123> listaDeTransacoes = new List<Transacoes123>();
+    public static List<Transacao> listaDeTransacoes = new List<Transacao>();
     public static int proximoId = 1;
     public static int proximoIdTransacao = 100;
 }
@@ -12,17 +12,17 @@ public static class BancoDados
 public class Conta
 {
     public int id { get; set; }
-    public string Nome_Completo_Do_Usuario { get; set; }
-    public string cpf { get; set; }
+    public string NomeCompleto { get; set; }
+    public string DocumentNumber { get; set; }
     public decimal saldo { get; set; }
     public string senha { get; set; } // senha em texto puro - NUNCA fazer isso
     public bool conta_ativa { get; set; }
     public DateTime DataDeCriacaoDaConta { get; set; }
-    public string email_do_usuario { get; set; }
+    public string userEmail { get; set; }
 }
 
 // nome da classe completamente ruim
-public class Transacoes123
+public class Transacao
 {
     public int id_transacao { get; set; }
     public int ContaOrigem { get; set; }
