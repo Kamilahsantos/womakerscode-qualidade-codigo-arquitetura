@@ -66,24 +66,25 @@ public class CarteiraController : ControllerBase
             return BadRequest("erro");
 
         // logica de busca duplicada de novo
-        Conta contaEncontrada = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
+        Conta contaEncontrada;
+        (bool flowControl, IActionResult value) = BuscarContaPorId(req, out contaEncontrada);
+        if (!flowControl)
         {
-            if (ContaDigitalModel.listaDeContas[i].id == req.id)
-                contaEncontrada = ContaDigitalModel.listaDeContas[i];
+            return value;
         }
-
-        if (contaEncontrada == null)
-            return BadRequest(new { msg = "conta nao encontrada" });
-
-        if (contaEncontrada.conta_ativa == false)
-            return BadRequest(new { msg = "conta desativada" });
 
         if (req.valor <= 0)
             return BadRequest(new { msg = "valor invalido" });
 
         contaEncontrada.saldo = contaEncontrada.saldo + req.valor;
 
+        TransacaoBuilder(req);
+
+        return Ok(new { msg = "deposito realizado com sucesso", novoSaldo = contaEncontrada.saldo });
+    }
+
+    private static void TransacaoBuilder(DepositarReq req)
+    {
         var t = new Transacao();
         t.id_transacao = ContaDigitalModel.proximoIdTransacao;
         t.ContaOrigem = req.id;
@@ -95,8 +96,24 @@ public class CarteiraController : ControllerBase
         t.status = "ok";
         ContaDigitalModel.proximoIdTransacao++;
         ContaDigitalModel.listaDeTransacoes.Add(t);
+    }
 
-        return Ok(new { msg = "deposito realizado com sucesso", novoSaldo = contaEncontrada.saldo });
+    private (bool contaExiste
+    , IActionResult? value) BuscarContaPorId(DepositarReq req, out Conta? contaEncontrada)
+    {
+        contaEncontrada = null;
+        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
+        {
+            if (ContaDigitalModel.listaDeContas[i].id == req.id)
+                contaEncontrada = ContaDigitalModel.listaDeContas[i];
+        }
+
+        if (contaEncontrada == null)
+            return (contaExiste: false, value: BadRequest(new { msg = "conta nao encontrada" }));
+
+        if (contaEncontrada.conta_ativa == false)
+            return (contaExiste: false, value: BadRequest(new { msg = "conta desativada" }));
+        return (contaExiste: true, value: null);
     }
 
     [HttpPost("sacar")]
@@ -126,18 +143,7 @@ public class CarteiraController : ControllerBase
             return BadRequest(new { msg = "saldo insuficiente" });
 
         contaEncontrada.saldo = contaEncontrada.saldo - req.valor;
-
-        var t = new Transacao();
-        t.id_transacao = ContaDigitalModel.proximoIdTransacao;
-        t.ContaOrigem = req.id;
-        t.ContaDestino = req.id;
-        t.Valor = req.valor;
-        t.Tipo = "S";
-        t.DataHora = DateTime.Now;
-        t.descricao = "Saque de " + req.valor + " reais da conta " + req.id;
-        t.status = "ok";
-        ContaDigitalModel.proximoIdTransacao++;
-        ContaDigitalModel.listaDeTransacoes.Add(t);
+        TransacaoBuilder(new DepositarReq { id = contaEncontrada.id, valor = req.valor });
 
         return Ok(new { msg = "saque realizado", novoSaldo = contaEncontrada.saldo });
     }
@@ -251,32 +257,4 @@ public class CarteiraController : ControllerBase
 
         return Ok(new { msg = "conta desativada com sucesso" });
     }
-}
-
-// modelos de request jogados no mesmo arquivo do controller - lugar errado
-public class CriarCarteiraRequest
-{
-    public string nome { get; set; }
-    public string cpf { get; set; }
-    public string senha { get; set; }
-    public string email { get; set; }
-}
-
-public class DepositarReq
-{
-    public int id { get; set; }
-    public decimal valor { get; set; }
-}
-
-public class SacarReq
-{
-    public int id { get; set; }
-    public decimal valor { get; set; }
-}
-
-public class TransferirReq
-{
-    public int idOrigem { get; set; }
-    public int idDestino { get; set; }
-    public decimal valor { get; set; }
 }
