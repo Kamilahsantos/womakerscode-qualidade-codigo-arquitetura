@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Course.Api.Controllers;
 
-// segundo controller que duplica logica do CarteiraController - nao deveria existir
+// TODO: UNIFICAR AS CONTROLLERS
 [ApiController]
 [Route("[controller]")]
 public class ContaController : ControllerBase
@@ -10,6 +10,8 @@ public class ContaController : ControllerBase
     [HttpGet("todas")]
     public IActionResult listarContas()
     {
+
+        //TODO: criar metodo em outra service para listar contas, pois ele é usado em 2 metodos diferentes
         var lista = new List<object>();
         for (int x = 0; x < ContaDigitalModel.listaDeContas.Count; x++)
         {
@@ -23,7 +25,7 @@ public class ContaController : ControllerBase
     [HttpGet("saldo/{id}")]
     public IActionResult GetSaldo(int id)
     {
-        // logica de busca duplicada do CarteiraController
+        // TODO: logica de busca duplicada do CarteiraController
         Conta c = null;
         for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
@@ -41,7 +43,7 @@ public class ContaController : ControllerBase
     {
         if (req == null) return BadRequest();
 
-        // logica de busca duplicada OUTRA VEZ
+        // TODO: logica de busca duplicada OUTRA VEZ
         Conta c = null;
         for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
@@ -58,6 +60,7 @@ public class ContaController : ControllerBase
         return Ok(new { msg = "dados atualizados", id = c.id, nome = c.NomeCompleto });
     }
 
+//TODO: DESABILITAR ESSE ENDPOINT, POIS ELE RETORNA TODAS AS TRANSACOES DE TODOS OS USUARIOS SEM AUTENTICACAO NENHUMA
     [HttpGet("historico-transacoes")]
     public IActionResult GetTodasTransacoes()
     {
@@ -72,7 +75,7 @@ public class ContaController : ControllerBase
     }
 }
 
-// mais uma request model no lugar errado - deveria estar em pasta Models separada
+//TODO:  mais uma request model no lugar errado - deveria estar em pasta Models separada
 public class AtualizarContaReq
 {
     public string novoNome { get; set; }

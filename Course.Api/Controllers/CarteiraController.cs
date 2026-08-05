@@ -4,11 +4,15 @@ namespace Course.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+
+//TODO: 1 - Criar uma classe de serviço para a lógica de negócio, e injetar no controller
 public class CarteiraController : ControllerBase
 {
     [HttpPost("criar-carteira")]
     public IActionResult CriarCarteira([FromBody] CriarCarteiraRequest criarCarteiraRequest)
     {
+
+        //TODO: 2 - Criar um metodo na service para validar o request, e chamar aqui no controller
         if (criarCarteiraRequest == null)
             return BadRequest("erro");
 
@@ -26,6 +30,8 @@ public class CarteiraController : ControllerBase
         if (cpfExiste == true)
             return BadRequest(new { msg = "cpf ja cadastrado" });
 
+
+//TODO: 3 - Criar um metodo na service para criar a conta, e chamar aqui no controller
         var c = new Conta();
         c.id = ContaDigitalModel.proximoId;
         c.NomeCompleto = criarCarteiraRequest.nome;
@@ -42,10 +48,13 @@ public class CarteiraController : ControllerBase
         return Ok(new { id = c.id, nome = c.NomeCompleto, saldo = c.saldo, ativo = c.conta_ativa });
     }
 
+
+
+
     [HttpGet("{id}")]
     public IActionResult BuscarCarteira(int id)
     {
-        // logica de busca duplicada - vai se repetir em todos os metodos
+        // TODO 4 - Chamar metodo de buscar conta pelo id que ja foi criado
         Conta contaEncontrada = null;
         for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
         {
@@ -65,13 +74,15 @@ public class CarteiraController : ControllerBase
         if (req == null)
             return BadRequest("erro");
 
-        // logica de busca duplicada de novo
+        // TODO: chamar metodo de validar se conta existe e esta ativa, que ja foi criado
         Conta contaEncontrada;
         (bool flowControl, IActionResult value) = BuscarContaPorId(req, out contaEncontrada);
         if (!flowControl)
         {
             return value;
         }
+
+        //TODO: criar metodo de validar valor do deposito, que sera criado na service, e chamar aqui no controller
 
         if (req.valor <= 0)
             return BadRequest(new { msg = "valor invalido" });
@@ -82,6 +93,10 @@ public class CarteiraController : ControllerBase
 
         return Ok(new { msg = "deposito realizado com sucesso", novoSaldo = contaEncontrada.saldo });
     }
+
+
+
+    //TODO: 5 - Criar um metodo na service para criar a transacao, e chamar aqui no controller
 
     private static void TransacaoBuilder(DepositarReq req)
     {
@@ -98,8 +113,8 @@ public class CarteiraController : ControllerBase
         ContaDigitalModel.listaDeTransacoes.Add(t);
     }
 
-    private (bool contaExiste
-    , IActionResult? value) BuscarContaPorId(DepositarReq req, out Conta? contaEncontrada)
+// REUTILIZAR ESSA METODO E LEVAR PARA UMA SERVICE, POIS ELE É USADO EM 3 METODOS DIFERENTES
+    private (bool contaExiste , IActionResult? value) BuscarContaPorId(DepositarReq req, out Conta? contaEncontrada)
     {
         contaEncontrada = null;
         for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
@@ -136,6 +151,8 @@ public class CarteiraController : ControllerBase
         if (contaEncontrada.conta_ativa == false)
             return BadRequest(new { msg = "conta desativada" });
 
+
+//TODO: criar metodo de validar valor do saque, que sera criado na service, e chamar aqui no controller
         if (req.valor <= 0)
             return BadRequest(new { msg = "valor invalido" });
 
@@ -181,6 +198,7 @@ public class CarteiraController : ControllerBase
         if (destino.conta_ativa == false)
             return BadRequest(new { msg = "conta destino inativa" });
 
+//TODO: criar metodo de validar valor da transferencia, que sera criado na service, e chamar aqui no controller
         if (req.valor <= 0)
             return BadRequest(new { msg = "valor invalido" });
 
@@ -190,6 +208,7 @@ public class CarteiraController : ControllerBase
         origem.saldo = origem.saldo - req.valor;
         destino.saldo = destino.saldo + req.valor;
 
+//REUTILIZAR O TRANSACAO BUILDER, MAS CRIAR UM NOVO METODO PARA TRANSFERENCIA, POIS O TIPO DE TRANSACAO É DIFERENTE
         var t = new Transacao();
         t.id_transacao = ContaDigitalModel.proximoIdTransacao;
         t.ContaOrigem = req.idOrigem;
@@ -219,6 +238,7 @@ public class CarteiraController : ControllerBase
         if (contaEncontrada == null)
             return NotFound(new { msg = "conta nao encontrada" });
 
+//TODO: CRIAR METODO EM OUTRA SERVICE PARA BUSCAR EXTRATO, POIS ELE É USADO EM 2 METODOS DIFERENTES
         var lista = new List<object>();
         for (int i = 0; i < ContaDigitalModel.listaDeTransacoes.Count; i++)
         {

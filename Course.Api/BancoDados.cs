@@ -1,5 +1,7 @@
 // TODO: mover essas classes para arquivos separados (nunca foi feito)
 // banco de dados em memoria - estado global estatico
+// validar que na vdd, uma transacao pertence a uma conta, e nao a duas contas diferentes, entao na tabela transacao eu devo ter um id de conta 
+
 public static class ContaDigitalModel
 {
     public static List<Conta> listaDeContas = new List<Conta>();
