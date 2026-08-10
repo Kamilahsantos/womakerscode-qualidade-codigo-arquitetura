@@ -1,7 +1,7 @@
-namespace Course.Api.Controllers;
+namespace Course.Api.Controllers.Requests;
 
-public class SacarReq
+public class SacarRequest
 {
-    public int id { get; set; }
-    public decimal valor { get; set; }
+    public int Id { get; set; }
+    public decimal Valor { get; set; }
 }

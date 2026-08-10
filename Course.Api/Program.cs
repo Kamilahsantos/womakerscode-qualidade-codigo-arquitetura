@@ -1,17 +1,27 @@
-// programa principal - configuracao da aplicacao
-var b = WebApplication.CreateBuilder(args);
+using Course.Api.Middleware;
+using Course.Api.Repositories;
+using Course.Api.Repositories.Interfaces;
+using Course.Api.Services;
+using Course.Api.Services.Interfaces;
 
-b.Services.AddControllers();
-b.Services.AddEndpointsApiExplorer();
-b.Services.AddOpenApi();
+var builder = WebApplication.CreateBuilder(args);
 
-var a = b.Build();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOpenApi();
 
-if (a.Environment.IsDevelopment())
-{
-    a.MapOpenApi();
-}
+builder.Services.AddSingleton<IContaRepository, ContaRepository>();
+builder.Services.AddSingleton<ITransacaoRepository, TransacaoRepository>();
+builder.Services.AddScoped<IContaService, ContaService>();
+builder.Services.AddScoped<ICarteiraService, CarteiraService>();
+builder.Services.AddScoped<ITransacaoService, TransacaoService>();
 
-a.UseHttpsRedirection();
-a.MapControllers();
-a.Run();
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
+
+app.UseMiddleware<ExceptionHandlerMiddleware>();
+app.UseHttpsRedirection();
+app.MapControllers();
+app.Run();

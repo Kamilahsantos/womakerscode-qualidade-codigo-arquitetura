@@ -1,84 +1,52 @@
+using Course.Api.Controllers.Requests;
+using Course.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Course.Api.Controllers;
 
-// TODO: UNIFICAR AS CONTROLLERS
 [ApiController]
 [Route("[controller]")]
 public class ContaController : ControllerBase
 {
-    [HttpGet("todas")]
-    public IActionResult listarContas()
-    {
+    private readonly IContaService _contaService;
+    private readonly ITransacaoService _transacaoService;
 
-        //TODO: criar metodo em outra service para listar contas, pois ele é usado em 2 metodos diferentes
-        var lista = new List<object>();
-        for (int x = 0; x < ContaDigitalModel.listaDeContas.Count; x++)
-        {
-            var cc = ContaDigitalModel.listaDeContas[x];
-            // expondo senha em texto puro na resposta - NUNCA fazer isso
-            lista.Add(new { id = cc.id, nome = cc.NomeCompleto, cpf = cc.DocumentNumber, saldo = cc.saldo, ativo = cc.conta_ativa, email = cc.userEmail, senha = cc.senha });
-        }
+    public ContaController(IContaService contaService, ITransacaoService transacaoService)
+    {
+        _contaService = contaService;
+        _transacaoService = transacaoService;
+    }
+
+    [HttpGet("todas")]
+    public IActionResult ListarContas()
+    {
+        var contas = _contaService.ListarContas();
+        var lista = contas.Select(c => new { id = c.Id, nome = c.NomeCompleto, cpf = c.Cpf, saldo = c.Saldo, ativo = c.Ativa, email = c.Email });
         return Ok(lista);
     }
 
     [HttpGet("saldo/{id}")]
-    public IActionResult GetSaldo(int id)
+    public IActionResult ConsultarSaldo(int id)
     {
-        // TODO: logica de busca duplicada do CarteiraController
-        Conta c = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == id)
-                c = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (c == null) return NotFound("conta nao existe");
-
-        return Ok(new { saldo = c.saldo, id = id });
+        var saldo = _contaService.ConsultarSaldo(id);
+        return Ok(new { saldo, id });
     }
 
     [HttpPut("atualizar/{id}")]
-    public IActionResult AtualizarConta(int id, [FromBody] AtualizarContaReq req)
+    public IActionResult AtualizarConta(int id, [FromBody] AtualizarContaRequest request)
     {
-        if (req == null) return BadRequest();
+        if (request == null)
+            return BadRequest();
 
-        // TODO: logica de busca duplicada OUTRA VEZ
-        Conta c = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == id)
-                c = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (c == null) return NotFound("conta nao existe");
-
-        c.NomeCompleto = req.novoNome;
-        c.userEmail = req.novoEmail;
-        c.senha = req.novaSenha; // ainda em texto puro!
-
-        return Ok(new { msg = "dados atualizados", id = c.id, nome = c.NomeCompleto });
+        var conta = _contaService.AtualizarConta(id, request);
+        return Ok(new { msg = "dados atualizados", id = conta.Id, nome = conta.NomeCompleto });
     }
 
-//TODO: DESABILITAR ESSE ENDPOINT, POIS ELE RETORNA TODAS AS TRANSACOES DE TODOS OS USUARIOS SEM AUTENTICACAO NENHUMA
     [HttpGet("historico-transacoes")]
-    public IActionResult GetTodasTransacoes()
+    public IActionResult ListarTransacoes()
     {
-        // retorna TODAS as transacoes de TODOS os usuarios sem autenticacao nenhuma
-        var lista = new List<object>();
-        for (int i = 0; i < ContaDigitalModel.listaDeTransacoes.Count; i++)
-        {
-            var t = ContaDigitalModel.listaDeTransacoes[i];
-            lista.Add(new { id = t.id_transacao, origem = t.ContaOrigem, destino = t.ContaDestino, valor = t.Valor, tipo = t.Tipo, data = t.DataHora, status = t.status });
-        }
+        var transacoes = _transacaoService.ListarTransacoes();
+        var lista = transacoes.Select(t => new { id = t.Id, origem = t.ContaOrigemId, destino = t.ContaDestinoId, valor = t.Valor, tipo = t.Tipo, data = t.DataHora, status = t.Status });
         return Ok(lista);
     }
-}
-
-//TODO:  mais uma request model no lugar errado - deveria estar em pasta Models separada
-public class AtualizarContaReq
-{
-    public string novoNome { get; set; }
-    public string novoEmail { get; set; }
-    public string novaSenha { get; set; }
 }

@@ -1,280 +1,84 @@
+using Course.Api.Controllers.Requests;
+using Course.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Course.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-
-//TODO: 1 - Criar uma classe de serviço para a lógica de negócio, e injetar no controller
 public class CarteiraController : ControllerBase
 {
-    [HttpPost("criar-carteira")]
-    public IActionResult CriarCarteira([FromBody] CriarCarteiraRequest criarCarteiraRequest)
+    private readonly IContaService _contaService;
+    private readonly ICarteiraService _carteiraService;
+    private readonly ITransacaoService _transacaoService;
+
+    public CarteiraController(IContaService contaService, ICarteiraService carteiraService, ITransacaoService transacaoService)
     {
-
-        //TODO: 2 - Criar um metodo na service para validar o request, e chamar aqui no controller
-        if (criarCarteiraRequest == null)
-            return BadRequest("erro");
-
-        // verifica cpf duplicado - logica inline sem metodo separado
-        bool cpfExiste = false;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].DocumentNumber == criarCarteiraRequest.cpf)
-            {
-                cpfExiste = true;
-                break;
-            }
-        }
-
-        if (cpfExiste == true)
-            return BadRequest(new { msg = "cpf ja cadastrado" });
-
-
-//TODO: 3 - Criar um metodo na service para criar a conta, e chamar aqui no controller
-        var c = new Conta();
-        c.id = ContaDigitalModel.proximoId;
-        c.NomeCompleto = criarCarteiraRequest.nome;
-        c.DocumentNumber = criarCarteiraRequest.cpf;
-        c.saldo = 0;
-        c.senha = criarCarteiraRequest.senha; // armazenando senha em texto puro
-        c.conta_ativa = true;
-        c.DataDeCriacaoDaConta = DateTime.Now;
-        c.userEmail = criarCarteiraRequest.email;
-
-        ContaDigitalModel.proximoId = ContaDigitalModel.proximoId + 1;
-        ContaDigitalModel.listaDeContas.Add(c);
-
-        return Ok(new { id = c.id, nome = c.NomeCompleto, saldo = c.saldo, ativo = c.conta_ativa });
+        _contaService = contaService;
+        _carteiraService = carteiraService;
+        _transacaoService = transacaoService;
     }
 
+    [HttpPost("criar-carteira")]
+    public IActionResult CriarCarteira([FromBody] CriarCarteiraRequest request)
+    {
+        if (request == null)
+            return BadRequest(new { msg = "requisicao invalida" });
 
-
+        var conta = _contaService.CriarConta(request);
+        return Ok(new { id = conta.Id, nome = conta.NomeCompleto, saldo = conta.Saldo, ativo = conta.Ativa });
+    }
 
     [HttpGet("{id}")]
     public IActionResult BuscarCarteira(int id)
     {
-        // TODO 4 - Chamar metodo de buscar conta pelo id que ja foi criado
-        Conta contaEncontrada = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == id)
-                contaEncontrada = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (contaEncontrada == null)
-            return NotFound(new { msg = "conta nao encontrada" });
-
-        return Ok(new { id = contaEncontrada.id, nome = contaEncontrada.NomeCompleto, saldo = contaEncontrada.saldo, cpf = contaEncontrada.DocumentNumber, email = contaEncontrada.userEmail, ativo = contaEncontrada.conta_ativa });
+        var conta = _contaService.BuscarConta(id);
+        return Ok(new { id = conta.Id, nome = conta.NomeCompleto, saldo = conta.Saldo, cpf = conta.Cpf, email = conta.Email, ativo = conta.Ativa });
     }
 
     [HttpPost("depositar")]
-    public IActionResult Depositar([FromBody] DepositarReq req)
+    public IActionResult Depositar([FromBody] DepositarRequest request)
     {
-        if (req == null)
-            return BadRequest("erro");
+        if (request == null)
+            return BadRequest(new { msg = "requisicao invalida" });
 
-        // TODO: chamar metodo de validar se conta existe e esta ativa, que ja foi criado
-        Conta contaEncontrada;
-        (bool flowControl, IActionResult value) = BuscarContaPorId(req, out contaEncontrada);
-        if (!flowControl)
-        {
-            return value;
-        }
-
-        //TODO: criar metodo de validar valor do deposito, que sera criado na service, e chamar aqui no controller
-
-        if (req.valor <= 0)
-            return BadRequest(new { msg = "valor invalido" });
-
-        contaEncontrada.saldo = contaEncontrada.saldo + req.valor;
-
-        TransacaoBuilder(req);
-
-        return Ok(new { msg = "deposito realizado com sucesso", novoSaldo = contaEncontrada.saldo });
-    }
-
-
-
-    //TODO: 5 - Criar um metodo na service para criar a transacao, e chamar aqui no controller
-
-    private static void TransacaoBuilder(DepositarReq req)
-    {
-        var t = new Transacao();
-        t.id_transacao = ContaDigitalModel.proximoIdTransacao;
-        t.ContaOrigem = req.id;
-        t.ContaDestino = req.id;
-        t.Valor = req.valor;
-        t.Tipo = "D";
-        t.DataHora = DateTime.Now;
-        t.descricao = "Deposito de " + req.valor + " reais na conta " + req.id;
-        t.status = "ok";
-        ContaDigitalModel.proximoIdTransacao++;
-        ContaDigitalModel.listaDeTransacoes.Add(t);
-    }
-
-// REUTILIZAR ESSA METODO E LEVAR PARA UMA SERVICE, POIS ELE É USADO EM 3 METODOS DIFERENTES
-    private (bool contaExiste , IActionResult? value) BuscarContaPorId(DepositarReq req, out Conta? contaEncontrada)
-    {
-        contaEncontrada = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == req.id)
-                contaEncontrada = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (contaEncontrada == null)
-            return (contaExiste: false, value: BadRequest(new { msg = "conta nao encontrada" }));
-
-        if (contaEncontrada.conta_ativa == false)
-            return (contaExiste: false, value: BadRequest(new { msg = "conta desativada" }));
-        return (contaExiste: true, value: null);
+        var conta = _carteiraService.Depositar(request.Id, request.Valor);
+        return Ok(new { msg = "deposito realizado com sucesso", novoSaldo = conta.Saldo });
     }
 
     [HttpPost("sacar")]
-    public IActionResult Sacar([FromBody] SacarReq req)
+    public IActionResult Sacar([FromBody] SacarRequest request)
     {
-        if (req == null)
-            return BadRequest("erro");
+        if (request == null)
+            return BadRequest(new { msg = "requisicao invalida" });
 
-        // logica de busca duplicada DE NOVO (terceira vez)
-        Conta contaEncontrada = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == req.id)
-                contaEncontrada = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (contaEncontrada == null)
-            return BadRequest(new { msg = "conta nao encontrada" });
-
-        if (contaEncontrada.conta_ativa == false)
-            return BadRequest(new { msg = "conta desativada" });
-
-
-//TODO: criar metodo de validar valor do saque, que sera criado na service, e chamar aqui no controller
-        if (req.valor <= 0)
-            return BadRequest(new { msg = "valor invalido" });
-
-        if (contaEncontrada.saldo < req.valor)
-            return BadRequest(new { msg = "saldo insuficiente" });
-
-        contaEncontrada.saldo = contaEncontrada.saldo - req.valor;
-        TransacaoBuilder(new DepositarReq { id = contaEncontrada.id, valor = req.valor });
-
-        return Ok(new { msg = "saque realizado", novoSaldo = contaEncontrada.saldo });
+        var conta = _carteiraService.Sacar(request.Id, request.Valor);
+        return Ok(new { msg = "saque realizado", novoSaldo = conta.Saldo });
     }
 
     [HttpPost("transferir")]
-    public IActionResult Transferir([FromBody] TransferirReq req)
+    public IActionResult Transferir([FromBody] TransferirRequest request)
     {
-        if (req == null)
-            return BadRequest("erro");
+        if (request == null)
+            return BadRequest(new { msg = "requisicao invalida" });
 
-        // logica de busca duplicada PELA QUARTA VEZ
-        Conta origem = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == req.idOrigem)
-                origem = ContaDigitalModel.listaDeContas[i];
-        }
-
-        Conta destino = null;
-        for (int j = 0; j < ContaDigitalModel.listaDeContas.Count; j++)
-        {
-            if (ContaDigitalModel.listaDeContas[j].id == req.idDestino)
-                destino = ContaDigitalModel.listaDeContas[j];
-        }
-
-        if (origem == null)
-            return BadRequest(new { msg = "conta origem nao encontrada" });
-
-        if (destino == null)
-            return BadRequest(new { msg = "conta destino nao encontrada" });
-
-        if (origem.conta_ativa == false)
-            return BadRequest(new { msg = "conta origem inativa" });
-
-        if (destino.conta_ativa == false)
-            return BadRequest(new { msg = "conta destino inativa" });
-
-//TODO: criar metodo de validar valor da transferencia, que sera criado na service, e chamar aqui no controller
-        if (req.valor <= 0)
-            return BadRequest(new { msg = "valor invalido" });
-
-        if (origem.saldo < req.valor)
-            return BadRequest(new { msg = "saldo insuficiente" });
-
-        origem.saldo = origem.saldo - req.valor;
-        destino.saldo = destino.saldo + req.valor;
-
-//REUTILIZAR O TRANSACAO BUILDER, MAS CRIAR UM NOVO METODO PARA TRANSFERENCIA, POIS O TIPO DE TRANSACAO É DIFERENTE
-        var t = new Transacao();
-        t.id_transacao = ContaDigitalModel.proximoIdTransacao;
-        t.ContaOrigem = req.idOrigem;
-        t.ContaDestino = req.idDestino;
-        t.Valor = req.valor;
-        t.Tipo = "T";
-        t.DataHora = DateTime.Now;
-        t.descricao = "Transferencia de " + req.valor + " da conta " + req.idOrigem + " para conta " + req.idDestino;
-        t.status = "ok";
-        ContaDigitalModel.proximoIdTransacao++;
-        ContaDigitalModel.listaDeTransacoes.Add(t);
-
+        _carteiraService.Transferir(request.IdOrigem, request.IdDestino, request.Valor);
         return Ok(new { msg = "transferencia realizada" });
     }
 
     [HttpGet("{id}/extrato")]
     public IActionResult BuscarExtrato(int id)
     {
-        // logica de busca duplicada PELA QUINTA VEZ
-        Conta contaEncontrada = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == id)
-                contaEncontrada = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (contaEncontrada == null)
-            return NotFound(new { msg = "conta nao encontrada" });
-
-//TODO: CRIAR METODO EM OUTRA SERVICE PARA BUSCAR EXTRATO, POIS ELE É USADO EM 2 METODOS DIFERENTES
-        var lista = new List<object>();
-        for (int i = 0; i < ContaDigitalModel.listaDeTransacoes.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeTransacoes[i].ContaOrigem == id || ContaDigitalModel.listaDeTransacoes[i].ContaDestino == id)
-            {
-                lista.Add(new
-                {
-                    id = ContaDigitalModel.listaDeTransacoes[i].id_transacao,
-                    tipo = ContaDigitalModel.listaDeTransacoes[i].Tipo,
-                    valor = ContaDigitalModel.listaDeTransacoes[i].Valor,
-                    descricao = ContaDigitalModel.listaDeTransacoes[i].descricao,
-                    data = ContaDigitalModel.listaDeTransacoes[i].DataHora,
-                    status = ContaDigitalModel.listaDeTransacoes[i].status
-                });
-            }
-        }
-
+        _contaService.BuscarConta(id);
+        var transacoes = _transacaoService.BuscarExtrato(id);
+        var lista = transacoes.Select(t => new { id = t.Id, tipo = t.Tipo, valor = t.Valor, descricao = t.Descricao, data = t.DataHora, status = t.Status });
         return Ok(lista);
     }
 
     [HttpDelete("{id}")]
     public IActionResult DeletarConta(int id)
     {
-        // logica de busca duplicada PELA SEXTA VEZ
-        Conta contaEncontrada = null;
-        for (int i = 0; i < ContaDigitalModel.listaDeContas.Count; i++)
-        {
-            if (ContaDigitalModel.listaDeContas[i].id == id)
-                contaEncontrada = ContaDigitalModel.listaDeContas[i];
-        }
-
-        if (contaEncontrada == null)
-            return NotFound(new { msg = "conta nao encontrada" });
-
-        contaEncontrada.conta_ativa = false;
-
+        _contaService.DesativarConta(id);
         return Ok(new { msg = "conta desativada com sucesso" });
     }
 }

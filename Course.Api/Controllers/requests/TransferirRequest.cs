@@ -1,8 +1,8 @@
-namespace Course.Api.Controllers;
+namespace Course.Api.Controllers.Requests;
 
-public class TransferirReq
+public class TransferirRequest
 {
-    public int idOrigem { get; set; }
-    public int idDestino { get; set; }
-    public decimal valor { get; set; }
+    public int IdOrigem { get; set; }
+    public int IdDestino { get; set; }
+    public decimal Valor { get; set; }
 }

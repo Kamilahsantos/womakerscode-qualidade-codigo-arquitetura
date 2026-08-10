@@ -1,10 +1,9 @@
-namespace Course.Api.Controllers;
+namespace Course.Api.Controllers.Requests;
 
-// modelos de request jogados no mesmo arquivo do controller - lugar errado
 public class CriarCarteiraRequest
 {
-    public string nome { get; set; }
-    public string cpf { get; set; }
-    public string senha { get; set; }
-    public string email { get; set; }
+    public required string Nome { get; set; }
+    public required string Cpf { get; set; }
+    public required string Senha { get; set; }
+    public required string Email { get; set; }
 }
