@@ -3,6 +3,7 @@ using Course.Api.Exceptions;
 using Course.Api.Models;
 using Course.Api.Repositories.Interfaces;
 using Course.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -15,7 +16,7 @@ public class ContaServiceTests
 
     public ContaServiceTests()
     {
-        _service = new ContaService(_repositoryMock.Object);
+        _service = new ContaService(_repositoryMock.Object, NullLogger<ContaService>.Instance);
     }
 
     private static CriarCarteiraRequest RequestBase() => new()

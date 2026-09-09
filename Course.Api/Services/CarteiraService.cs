@@ -9,11 +9,13 @@ public class CarteiraService : ICarteiraService
 {
     private readonly IContaRepository _contaRepository;
     private readonly ITransacaoRepository _transacaoRepository;
+    private readonly ILogger<CarteiraService> _logger;
 
-    public CarteiraService(IContaRepository contaRepository, ITransacaoRepository transacaoRepository)
+    public CarteiraService(IContaRepository contaRepository, ITransacaoRepository transacaoRepository, ILogger<CarteiraService> logger)
     {
         _contaRepository = contaRepository;
         _transacaoRepository = transacaoRepository;
+        _logger = logger;
     }
 
     public Conta Depositar(int contaId, decimal valor)
@@ -25,6 +27,7 @@ public class CarteiraService : ICarteiraService
         conta.Saldo += valor;
         _contaRepository.Atualizar(conta);
         _transacaoRepository.Adicionar(CriarTransacao(contaId, contaId, valor, "D", $"Deposito de {valor} na conta {contaId}"));
+        _logger.LogInformation("Deposito de {Valor} realizado na conta {ContaId}", valor, contaId);
         return conta;
     }
 
@@ -41,6 +44,7 @@ public class CarteiraService : ICarteiraService
         conta.Saldo -= valor;
         _contaRepository.Atualizar(conta);
         _transacaoRepository.Adicionar(CriarTransacao(contaId, contaId, valor, "S", $"Saque de {valor} da conta {contaId}"));
+        _logger.LogInformation("Saque de {Valor} realizado na conta {ContaId}", valor, contaId);
         return conta;
     }
 
@@ -61,6 +65,7 @@ public class CarteiraService : ICarteiraService
         _contaRepository.Atualizar(destino);
         _transacaoRepository.Adicionar(CriarTransacao(contaOrigemId, contaDestinoId, valor, "T",
             $"Transferencia de {valor} da conta {contaOrigemId} para conta {contaDestinoId}"));
+        _logger.LogInformation("Transferencia de {Valor} realizada da conta {ContaOrigemId} para conta {ContaDestinoId}", valor, contaOrigemId, contaDestinoId);
     }
 
     private Conta BuscarContaAtiva(int id)

@@ -10,10 +10,12 @@ namespace Course.Api.Services;
 public class ContaService : IContaService
 {
     private readonly IContaRepository _contaRepository;
+    private readonly ILogger<ContaService> _logger;
 
-    public ContaService(IContaRepository contaRepository)
+    public ContaService(IContaRepository contaRepository, ILogger<ContaService> logger)
     {
         _contaRepository = contaRepository;
+        _logger = logger;
     }
 
     public Conta CriarConta(CriarCarteiraRequest request)
@@ -32,7 +34,9 @@ public class ContaService : IContaService
             DataCriacao = DateTime.UtcNow
         };
 
-        return _contaRepository.Adicionar(conta);
+        conta = _contaRepository.Adicionar(conta);
+        _logger.LogInformation("Conta {ContaId} criada com sucesso", conta.Id);
+        return conta;
     }
 
     public Conta BuscarConta(int id)
@@ -58,6 +62,7 @@ public class ContaService : IContaService
         var conta = BuscarConta(id);
         conta.Ativa = false;
         _contaRepository.Atualizar(conta);
+        _logger.LogInformation("Conta {ContaId} desativada", id);
         return conta;
     }
 

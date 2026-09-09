@@ -7,25 +7,25 @@ public class DomainException : Exception
 
 public class ContaNaoEncontradaException : DomainException
 {
-    public ContaNaoEncontradaException(int id) : base($"Conta {id} nao encontrada.") { }
+    public ContaNaoEncontradaException(int id) : base(string.Format(MensagensErro.ContaNaoEncontrada, id)) { }
 }
 
 public class ContaInativaException : DomainException
 {
-    public ContaInativaException(int id) : base($"Conta {id} esta desativada.") { }
+    public ContaInativaException(int id) : base(string.Format(MensagensErro.ContaInativa, id)) { }
 }
 
 public class CpfJaCadastradoException : DomainException
 {
-    public CpfJaCadastradoException() : base("CPF ja cadastrado.") { }
+    public CpfJaCadastradoException() : base(MensagensErro.CpfJaCadastrado) { }
 }
 
 public class SaldoInsuficienteException : DomainException
 {
-    public SaldoInsuficienteException() : base("Saldo insuficiente.") { }
+    public SaldoInsuficienteException() : base(MensagensErro.SaldoInsuficiente) { }
 }
 
 public class ValorInvalidoException : DomainException
 {
-    public ValorInvalidoException() : base("Valor deve ser maior que zero.") { }
+    public ValorInvalidoException() : base(MensagensErro.ValorInvalido) { }
 }

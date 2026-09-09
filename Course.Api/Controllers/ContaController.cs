@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using Course.Api.Controllers.Requests;
+using Course.Api.Exceptions;
 using Course.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,17 +28,17 @@ public class ContaController : ControllerBase
     }
 
     [HttpGet("saldo/{id}")]
-    public IActionResult ConsultarSaldo(int id)
+    public IActionResult ConsultarSaldo([Range(1, int.MaxValue, ErrorMessage = MensagensErro.IdContaInvalido)] int id)
     {
         var saldo = _contaService.ConsultarSaldo(id);
         return Ok(new { saldo, id });
     }
 
     [HttpPut("atualizar/{id}")]
-    public IActionResult AtualizarConta(int id, [FromBody] AtualizarContaRequest request)
+    public IActionResult AtualizarConta([Range(1, int.MaxValue, ErrorMessage = MensagensErro.IdContaInvalido)] int id, [FromBody] AtualizarContaRequest request)
     {
         if (request == null)
-            return BadRequest();
+            return BadRequest(new { msg = MensagensErro.RequisicaoInvalida });
 
         var conta = _contaService.AtualizarConta(id, request);
         return Ok(new { msg = "dados atualizados", id = conta.Id, nome = conta.NomeCompleto });

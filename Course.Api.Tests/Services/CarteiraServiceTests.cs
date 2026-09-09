@@ -2,6 +2,7 @@ using Course.Api.Exceptions;
 using Course.Api.Models;
 using Course.Api.Repositories.Interfaces;
 using Course.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -15,7 +16,7 @@ public class CarteiraServiceTests
 
     public CarteiraServiceTests()
     {
-        _service = new CarteiraService(_contaRepoMock.Object, _transacaoRepoMock.Object);
+        _service = new CarteiraService(_contaRepoMock.Object, _transacaoRepoMock.Object, NullLogger<CarteiraService>.Instance);
     }
 
     private static Conta ContaAtiva(int id = 1, decimal saldo = 500) => new()
